@@ -1,0 +1,292 @@
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<style>
+    #map {
+        height: 600px;
+        width: 100%;
+    }
+
+    #timer, #playTimer {
+        position: absolute;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 40px;
+        color: white;
+        padding: 10px 20px;
+        background: rgba(0,0,0,0.5);
+        border-radius: 10px;
+        display: none;
+        z-index: 2000;
+    }
+
+    #btnApostar {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 24px;
+        padding: 12px 25px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        display: none;
+        z-index: 9999; /* AGORA GARANTIDO */
+    }
+</style>
+
+<div id="timer"></div>
+<div id="playTimer"></div>
+<button id="btnApostar">Esse é o ponto!</button>
+
+<div id="map"></div>
+
+<script>
+    let map;
+    let marker;
+    let countdownInterval;
+    let zoomInterval;
+    let playTimerRef;
+    let jogoAtivo = false;
+
+const mensagens = [
+    "Prepare-se para o desafio!",
+    "Será que você acerta desta vez?",
+    "Use seu instinto explorador!",
+    "Adivinhe onde estou!",
+    "Este lugar é famoso… ou não!",
+    "Confia no zoom!",
+    "Olhe bem… ou melhor, aproxime bem!",
+    "Aposto que você já viu esse lugar!",
+    "Seu mapa mental está em dia?",
+    "Só os fortes encontram!",
+    "Vamos testar sua memória geográfica!",
+    "Parece fácil? Veremos!",
+    "Não vale chutar… ou vale?",
+    "Zoom para vencer!",
+    "Hora da verdade!",
+    "Boa sorte, detetive do GPS!"
+];
+
+function mensagemAleatoria() {
+    return mensagens[Math.floor(Math.random() * mensagens.length)];
+}
+
+const pontosTuristicos = [
+    { lat: 48.8584, lng: 2.2945, nome: mensagemAleatoria() },
+    { lat: 40.6892, lng: -74.0445, nome: mensagemAleatoria() },
+    { lat: 41.8902, lng: 12.4922, nome: mensagemAleatoria() },
+    { lat: 51.5007, lng: -0.1246, nome: mensagemAleatoria() },
+    { lat: 40.7580, lng: -73.9855, nome: mensagemAleatoria() },
+    { lat: 25.1972, lng: 55.2744, nome: mensagemAleatoria() },
+    { lat: 27.1751, lng: 78.0421, nome: mensagemAleatoria() },
+    { lat: 29.9792, lng: 31.1342, nome: mensagemAleatoria() },
+    { lat: 40.4319, lng: 116.5704, nome: mensagemAleatoria() },
+    { lat: 35.6586, lng: 139.7454, nome: mensagemAleatoria() },
+
+    // Brasil
+    { lat: -22.9519, lng: -43.2105, nome: mensagemAleatoria() },
+    { lat: -22.9486, lng: -43.1566, nome: mensagemAleatoria() },
+    { lat: -23.5614, lng: -46.6554, nome: mensagemAleatoria() },
+    { lat: -12.9718, lng: -38.5108, nome: mensagemAleatoria() },
+    { lat: -12.9730, lng: -38.5109, nome: mensagemAleatoria() },
+    { lat: -8.1195, lng: -34.9033, nome: mensagemAleatoria() },
+    { lat: -9.7696, lng: -35.8407, nome: mensagemAleatoria() },
+    { lat: -13.0094, lng: -38.5324, nome: mensagemAleatoria() },
+    { lat: -23.2192, lng: -44.7114, nome: mensagemAleatoria() },
+    { lat: -2.5315, lng: -43.1142, nome: mensagemAleatoria() },
+
+    // Natureza
+    { lat: 36.1069, lng: -112.1129, nome: mensagemAleatoria() },
+    { lat: -25.6953, lng: -54.4367, nome: mensagemAleatoria() },
+    { lat: 28.0015, lng: 86.8528, nome: mensagemAleatoria() },
+    { lat: 37.8651, lng: -119.5383, nome: mensagemAleatoria() },
+    { lat: -15.7667, lng: -69.3333, nome: mensagemAleatoria() },
+    { lat: -49.3315, lng: -72.8864, nome: mensagemAleatoria() },
+    { lat: 63.8804, lng: -22.4495, nome: mensagemAleatoria() },
+    { lat: 35.3606, lng: 138.7274, nome: mensagemAleatoria() },
+    { lat: -13.1631, lng: -72.5450, nome: mensagemAleatoria() },
+    { lat: -25.3444, lng: 131.0369, nome: mensagemAleatoria() },
+
+    // Urbanos
+    { lat: 36.1147, lng: -115.1728, nome: mensagemAleatoria() },
+    { lat: 40.7851, lng: -73.9683, nome: mensagemAleatoria() },
+    { lat: 43.6426, lng: -79.3871, nome: mensagemAleatoria() },
+    { lat: -33.8568, lng: 151.2153, nome: mensagemAleatoria() },
+    { lat: 55.7539, lng: 37.6208, nome: mensagemAleatoria() },
+    { lat: 48.8606, lng: 2.3376, nome: mensagemAleatoria() },
+    { lat: 35.6595, lng: 139.7005, nome: mensagemAleatoria() },
+    { lat: 1.2834, lng: 103.8607, nome: mensagemAleatoria() },
+    { lat: -34.6083, lng: -58.3629, nome: mensagemAleatoria() },
+    { lat: -34.6037, lng: -58.3816, nome: mensagemAleatoria() }
+];
+
+
+    const timerDiv = document.getElementById("timer");
+    const playTimerDiv = document.getElementById("playTimer");
+    const btnApostar = document.getElementById("btnApostar");
+
+    let startLat, startLng, startName;
+
+    function iniciarPartida() {
+
+        // limpa timers anteriores
+        clearInterval(countdownInterval);
+        clearInterval(zoomInterval);
+        clearInterval(playTimerRef);
+
+        timerDiv.style.display = "none";
+        playTimerDiv.style.display = "none";
+        btnApostar.style.display = "none";
+
+        jogoAtivo = false;
+
+        // Se já existir mapa, destruir antes de recriar
+        if (map) {
+            map.remove();
+        }
+
+        // Sorteia um novo ponto
+        const ponto = pontosTuristicos[Math.floor(Math.random() * pontosTuristicos.length)];
+        startLat = ponto.lat;
+        startLng = ponto.lng;
+        startName = ponto.nome;
+
+        // Recria o mapa
+        map = L.map('map').setView([startLat, startLng], 18);
+
+        L.tileLayer(
+            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            {
+                maxZoom: 19
+            }
+        ).addTo(map);
+
+        marker = L.marker([startLat, startLng]).addTo(map);
+        marker.bindPopup(startName).openPopup();
+
+        iniciarTimerInicial();
+    }
+
+
+    // ------------------------
+    // Timer inicial (3s)
+    // ------------------------
+    function iniciarTimerInicial() {
+        let countdown = 5;
+
+        timerDiv.style.display = "block";
+        timerDiv.innerText = countdown;
+
+        countdownInterval = setInterval(() => {
+            countdown--;
+            timerDiv.innerText = countdown;
+
+            if (countdown === 0) {
+                clearInterval(countdownInterval);
+                timerDiv.style.display = "none";
+                marker.remove();
+                iniciarZoomOut();
+            }
+        }, 1000);
+    }
+
+
+    // ------------------------
+    // Zoom-Out
+    // ------------------------
+    function iniciarZoomOut() {
+        let currentZoom = map.getZoom();
+        const minZoom = 2;
+
+        zoomInterval = setInterval(() => {
+            currentZoom--;
+
+            if (currentZoom < minZoom) {
+                clearInterval(zoomInterval);
+                iniciarTimerJogo();
+            } else {
+                map.setZoom(currentZoom);
+            }
+        }, 600);
+    }
+
+
+    // ------------------------
+    // Timer da jogada (30s)
+    // ------------------------
+    function iniciarTimerJogo() {
+        jogoAtivo = true;
+        let timeLeft = 30;
+
+        playTimerDiv.style.display = "block";
+        playTimerDiv.innerText = timeLeft;
+
+        btnApostar.style.display = "block";
+
+        playTimerRef = setInterval(() => {
+            timeLeft--;
+            playTimerDiv.innerText = timeLeft;
+
+            if (timeLeft <= 0) {
+                clearInterval(playTimerRef);
+                perder();
+            }
+        }, 1000);
+    }
+
+
+    // ------------------------
+    // Clique no botão “Esse é o ponto!”
+    // ------------------------
+    btnApostar.addEventListener("click", () => {
+        if (!jogoAtivo) return;
+
+        clearInterval(playTimerRef);
+        verificarPalpite();
+    });
+
+
+    // ------------------------
+    // Verifica palpite
+    // ------------------------
+    function verificarPalpite() {
+        jogoAtivo = false;
+        btnApostar.style.display = "none";
+        playTimerDiv.style.display = "none";
+
+        const center = map.getCenter();
+        const distancia = map.distance([startLat, startLng], center);
+
+        if (distancia <= 200) {
+            alert("🎉 Você acertou, lindo! Distância: " + distancia.toFixed(1) + "m");
+        } else {
+            alert("❌ Não foi dessa vez... Distância: " + distancia.toFixed(1) + "m");
+        }
+
+        iniciarPartida(); // reinicia o jogo automaticamente
+    }
+
+
+    // ------------------------
+    // Perdeu pelo tempo
+    // ------------------------
+    function perder() {
+        jogoAtivo = false;
+        btnApostar.style.display = "none";
+        playTimerDiv.style.display = "none";
+        alert("⏳ Tempo acabou, lindo! Você perdeu.");
+
+        iniciarPartida();
+    }
+
+
+    // ------------------------
+    // INÍCIO DO JOGO
+    // ------------------------
+    iniciarPartida();
+</script>
+

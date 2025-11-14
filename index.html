@@ -372,8 +372,10 @@ const pontosTuristicos = [
 
     if (distanciaMetros <= 1000) {
         alert("🎉 Você acertou! Distância: " + distanciaKm.toFixed(2) + " km");
+		definirMensagemHeader();
     } else {
         alert("❌ Não foi dessa vez... Distância: " + distanciaKm.toFixed(2) + " km");
+		definirMensagemHeader();
     }
 
     iniciarPartida(); // reinicia o jogo automaticamente

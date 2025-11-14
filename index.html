@@ -58,7 +58,8 @@
 <div id="playTimer"></div>
 
 <button type="button" class="btn btn-default" id="btnApostar">
-      <span class="glyphicon glyphicon-search"></span> Esse é o ponto!
+<table><tr><td style="width:30px">
+      <span class="glyphicon glyphicon-search" style="color: white;"></span> </td><td> <h4 id="textoBotao" style="color: white;">Esse é o ponto!</h4></td></tr></table>
     </button>
 <div id="map"></div>
 
@@ -373,9 +374,13 @@ const pontosTuristicos = [
     if (distanciaMetros <= 1000) {
         alert("🎉 Você acertou! Distância: " + distanciaKm.toFixed(2) + " km");
 		definirMensagemHeader();
+		document.getElementById("textoBotao").innerText = textoBotaoAleatorio();
     } else {
         alert("❌ Não foi dessa vez... Distância: " + distanciaKm.toFixed(2) + " km");
 		definirMensagemHeader();
+		document.getElementById("textoBotao").innerText =  textoBotaoAleatorio();
+		
+		
     }
 
     iniciarPartida(); // reinicia o jogo automaticamente
@@ -422,10 +427,38 @@ const pontosTuristicos = [
     "Localize e vença."
 ];
 
+const mensagensBotao = [
+    "Esse é o ponto!",
+    "Aqui!",
+    "Achei!",
+    "É aqui mesmo!",
+    "Estou confiante!",
+    "Chuta aqui!",
+    "Minha aposta é essa!",
+    "É esse o local!",
+    "Marcar esse ponto!",
+    "Confirmar palpite!",
+    "Vai ser aqui!",
+    "Tenho certeza!",
+    "Vamos ver!",
+    "Estou apostando aqui!",
+    "Acho que é aqui!",
+    "Tentar este ponto!",
+    "É por aqui!",
+    "Vou arriscar aqui!",
+    "É esse lugar!",
+    "Achei o local!"
+];
+
+
 // Define mensagem aleatória no header
 function definirMensagemHeader() {
     const texto = headerMessages[Math.floor(Math.random() * headerMessages.length)];
     document.getElementById("headerText").textContent = texto;
+}
+
+function textoBotaoAleatorio() {
+    return mensagensBotao[Math.floor(Math.random() * mensagensBotao.length)];
 }
 
 // Executa ao carregar a página

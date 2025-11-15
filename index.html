@@ -286,16 +286,19 @@ const pontosTuristicos = [
     // Timer inicial (3s)
     // ------------------------
     function iniciarTimerInicial() {
-        let countdown = 5;
+        let countdown = 6;
 
         timerDiv.style.display = "block";
-        timerDiv.innerText = countdown;
+        timerDiv.innerText = countdown-1;
 
         countdownInterval = setInterval(() => {
             countdown--;
-            timerDiv.innerText = countdown;
+            timerDiv.innerText = countdown-1;
 
-            if (countdown === 0) {
+            if (countdown === 1) {
+				timerDiv.innerText = textoInicioPartida();                
+            }
+			if (countdown === 0) {
                 clearInterval(countdownInterval);
                 timerDiv.style.display = "none";
                 marker.remove();
@@ -375,7 +378,14 @@ const pontosTuristicos = [
         alert("🎉 Você acertou! Distância: " + distanciaKm.toFixed(2) + " km");
 		definirMensagemHeader();
 		document.getElementById("textoBotao").innerText = textoBotaoAleatorio();
-    } else {
+    } 
+	else if (distanciaMetros >= 1000 && distanciaMetros <= 20000)
+	{
+		alert("❌ Essa foi por pouco... Distância: " + distanciaKm.toFixed(2) + " km");
+		definirMensagemHeader();
+		document.getElementById("textoBotao").innerText =  textoBotaoAleatorio();
+	}
+	else {
         alert("❌ Não foi dessa vez... Distância: " + distanciaKm.toFixed(2) + " km");
 		definirMensagemHeader();
 		document.getElementById("textoBotao").innerText =  textoBotaoAleatorio();
@@ -450,6 +460,41 @@ const mensagensBotao = [
     "Achei o local!"
 ];
 
+const mensagensInicioBusca = [
+    "Localize este lugar 🔎",
+    "Encontre o ponto no mapa! 🌍",
+    "Prepare-se para a busca! 🚀",    
+    "Hora de localizar! 🧭",
+    "Onde fica este lugar? 🤔",
+    "Zoom no mapa e vamos! 🔍",    
+    "Olhos atentos! 👀",    
+    "Procure com atenção! 🧐",
+    "A caçada começou! 🧭",
+    "Local misterioso chegando… 🕵️",    
+    "Hora de explorar! 🧳",
+    "Acerte o local correto! 📌",
+    "Encontre antes de clicar! 👆",
+    "O mapa te espera! 🌐",
+    "Esse é difícil… consegue? 😬",
+    "O desafio está valendo! 🏁",
+    "Boa sorte nesta rodada! 🤞",
+    "Você está pronto? Vamos lá! 🧭",
+    "Aponte no mapa o local certo! 📍",
+    "Treine o olhar geográfico 👁️🌎",
+    "Hora de mostrar precisão! 🎯",    
+    "Desafio global ativado! 🌐",
+    "Busque, ache e vença! 🏆",
+    "Onde será que isso fica? 🤨",
+    "Use o zoom e encontre! 🔍",
+    "Você consegue! Vai! 💪",
+    "Domine o mapa! 🗺️",
+    "Mostre sua memória geográfica! 🧠",    
+    "Encontre rápido para pontuar mais! 📈",
+    "Desafio liberado: localize o ponto! 📌",
+    "Prepare o zoom! 🧐"
+];
+
+
 
 // Define mensagem aleatória no header
 function definirMensagemHeader() {
@@ -459,6 +504,10 @@ function definirMensagemHeader() {
 
 function textoBotaoAleatorio() {
     return mensagensBotao[Math.floor(Math.random() * mensagensBotao.length)];
+}
+
+function textoInicioPartida() {
+    return mensagensInicioBusca[Math.floor(Math.random() * mensagensInicioBusca.length)];
 }
 
 // Executa ao carregar a página

@@ -14,9 +14,61 @@
 <div id="header" style="background: rgb(65, 125, 146); display: flex; align-items: center;">
     <img src="geoSpot_sm.png" alt="Logo" id="logo" style="margin-right: 15px;">
     <span id="headerText" style="color: white; font-size: 22px; font-family: 'Bebas Neue', sans-serif; letter-spacing: 1px;"></span>
+	
+
+    <div id="ranking" style="color:white; margin-left:auto;">
+        <ol id="listaRanking"></ol>
+    </div>
 
 </div>
 
+
+
+    <!-- PLACAR -->
+<div id="placar" 
+     style="display: flex; align-items: center; justify-content: space-between; width: 100%; padding:10px; color:white;">
+
+    <!-- ESQUERDA -->
+    <div style="flex: 1; display:flex; justify-content:flex-start;">
+        <input id="nomeJogador" type="text" placeholder="Digite seu nome"
+                style="padding:3px 5px; width:130px; font-size:14px;color:black">
+    </div>
+
+    <!-- CENTRO -->
+    <div style="flex: 1; text-align: center; font-size: 20px;">
+        Pontos: <span id="pontosValor">0</span>
+    </div>
+
+    <!-- DIREITA (vazio para equilibrar o layout) -->
+    <div style="flex: 1;"></div>
+
+</div>
+	
+	
+
+	
+
+
+<style>
+
+
+    #listaRanking {
+        list-style: none;
+        padding-left: 0;
+        display: flex;      
+        gap: 25px;
+        font-size: 18px;
+        align-items: center;
+    }
+
+    #listaRanking li {
+        max-height: 64px;      /* <-- aqui */
+        overflow: hidden;      
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+</style>
 <style>
     #map {
         height: 600px;
@@ -52,6 +104,14 @@
         display: none;
         z-index: 9999; /* AGORA GARANTIDO */
     }
+	
+	 #placar {
+            background: #2b5f73;
+            color: white;
+            padding: 8px;
+            font-size: 20px;
+            text-align: center;
+        }
 </style>
 
 <div id="timer"></div>
@@ -70,6 +130,10 @@
     let zoomInterval;
     let playTimerRef;
     let jogoAtivo = false;
+	
+	// 🔥 NOVO: Carrega pontuação salva
+        let pontos = Number(localStorage.getItem("pontosGeoSpot")) || 0;
+        document.getElementById("pontosValor").innerText = pontos;
 
 const mensagens = [
     "Prepare-se para o desafio!",
@@ -378,12 +442,14 @@ const pontosTuristicos = [
         alert("🎉 Você acertou! Distância: " + distanciaKm.toFixed(2) + " km");
 		definirMensagemHeader();
 		document.getElementById("textoBotao").innerText = textoBotaoAleatorio();
+		pontos += 10;
     } 
 	else if (distanciaMetros >= 1000 && distanciaMetros <= 20000)
 	{
 		alert("❌ Essa foi por pouco... Distância: " + distanciaKm.toFixed(2) + " km");
 		definirMensagemHeader();
 		document.getElementById("textoBotao").innerText =  textoBotaoAleatorio();
+		pontos += 5;
 	}
 	else {
         alert("❌ Não foi dessa vez... Distância: " + distanciaKm.toFixed(2) + " km");
@@ -391,7 +457,25 @@ const pontosTuristicos = [
 		document.getElementById("textoBotao").innerText =  textoBotaoAleatorio();
 		
 		
+		pontos = 0;
+		
     }
+	
+		nome = document.getElementById("nomeJogador").value.trim();						
+		//alert(nome);
+		 if (nome !== "" && pontos > 0) 
+		 {
+			salvarPontuacao(nome, pontos);
+		 }
+	
+	
+	
+	
+	          // Atualiza tela
+            document.getElementById("pontosValor").innerText = pontos;
+
+            // Salva localmente
+            localStorage.setItem("pontosGeoSpot", pontos);
 
     iniciarPartida(); // reinicia o jogo automaticamente
 }
@@ -512,7 +596,142 @@ function textoInicioPartida() {
 
 // Executa ao carregar a página
 definirMensagemHeader();
+carregarRanking();
+</script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 
+import { 
+    getFirestore,
+    collection,
+    addDoc,
+    getDocs,
+    query,
+    where,
+    updateDoc,
+    orderBy,
+    limit
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+ 
+
+    // ---------------------------------------
+    // CONFIGURAÇÃO DO FIREBASE (cole a sua!)
+    // ---------------------------------------
+const firebaseConfig = {
+  apiKey: "AIzaSyCQkKHyn-yfr4RlmFfNtZLjBB2ZnzGBIVU",
+  authDomain: "geospot-5e68f.firebaseapp.com",
+  projectId: "geospot-5e68f",
+  storageBucket: "geospot-5e68f.firebasestorage.app",
+  messagingSenderId: "1000596280668",
+  appId: "1:1000596280668:web:be7e406a614c709f271d99"
+};
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // ---------------------------------------
+    // SALVAR PONTUAÇÃO NO FIRESTORE
+    // ---------------------------------------
+  async function salvarPontuacao(nome, pontos) {
+    try {
+        const rankingRef = collection(db, "ranking");
+
+        // 1️⃣ Verificar se já existe jogador com este nome
+        const q = query(rankingRef, where("Nome", "==", nome));
+        const resultado = await getDocs(q);
+
+        if (resultado.empty) {
+            // 2️⃣ Jogador novo → inserir
+            await addDoc(rankingRef, {
+                Nome: nome,
+                Pontos: pontos,
+                Data: new Date()
+            });
+
+            console.log("Novo jogador salvo!");
+        } else {
+            // 3️⃣ Existe → comparar pontuações
+            const docExistente = resultado.docs[0];
+            const dados = docExistente.data();
+
+            if (pontos > dados.Pontos) {
+                // 4️⃣ Atualizar somente se for maior
+                await updateDoc(docExistente.ref, {
+                    Pontos: pontos,
+                    Data: new Date()
+                });
+
+                console.log("Pontuação atualizada!");
+            } else {
+                console.log("Pontuação não supera a existente. Nada foi salvo.");
+            }
+        }
+
+    } catch (erro) {
+        console.error("Erro ao salvar pontuação:", erro);
+    }
+}
+
+function exibirRanking(dados) {
+    const lista = document.getElementById("listaRanking");
+    lista.innerHTML = "";
+
+    const medalhas = ["🥇", "🥈", "🥉"]; // Top 3
+
+    dados.forEach((doc, index) => {
+        const item = doc.data();
+        const li = document.createElement("li");
+
+        li.style.background = "#1d4150";
+        
+        li.style.borderRadius = "8px";
+        li.style.width = "190px";
+        li.style.textAlign = "center";
+        li.style.fontSize = "12px";
+
+        // Seleciona a medalha pelo índice
+        const medalha = medalhas[index] || "";
+
+        li.innerHTML = `
+            <div style="font-size:26px;">${medalha}</div>
+            <strong>${item.Nome}</strong><br>
+            <span>${item.Pontos} pts</span>
+        `;
+
+        lista.appendChild(li);
+    });
+}
+
+
+    // ---------------------------------------
+    // BUSCAR TOP 3 DO RANKING
+    // ---------------------------------------
+   async function carregarRanking() {
+    const lista = document.getElementById("listaRanking");
+    lista.innerHTML = "<li>Carregando...</li>";
+
+    try {
+        const rankingRef = collection(db, "ranking");
+        const q = query(rankingRef, orderBy("Pontos", "desc"), limit(3));
+
+        const snapshot = await getDocs(q);
+
+        const dados = snapshot.docs;  // <- é isso que enviamos
+
+        exibirRanking(dados);
+
+    } catch (error) {
+        console.error("Erro ao carregar ranking:", error);
+        lista.innerHTML = "<li>Erro ao carregar ranking</li>";
+    }
+}
+
+
+	
+   window.salvarPontuacao = salvarPontuacao;
+   window.carregarRanking = carregarRanking;
+   carregarRanking();
 	
 </script>
 

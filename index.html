@@ -315,7 +315,8 @@ const pontosTuristicos = [
     startLng = ponto.lng;
     startName = ponto.nome;
 
-    map = L.map('map').setView([startLat, startLng], 18);
+    map = L.map('map', { zoomControl: false }).setView([startLat, startLng], 18);
+
 
     L.tileLayer(
         'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
